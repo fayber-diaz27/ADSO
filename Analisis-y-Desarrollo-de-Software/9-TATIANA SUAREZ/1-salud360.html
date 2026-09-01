@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SALUD360 — Sistema Integral de Gestión</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0A0F1E; --surface: #0F172A; --card: #111827; --border: #1E293B;
+    --accent: #06B6D4; --accent-soft: #0E7490;
+    --green: #10B981; --amber: #F59E0B; --red: #EF4444;
+    --purple: #8B5CF6; --pink: #EC4899; --violet: #A78BFA;
+    --text: #F1F5F9; --muted: #64748B; --sub: #94A3B8;
+  }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; height: 100vh; overflow: hidden; display: flex; }
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+
+  /* SIDEBAR */
+  #sidebar {
+    width: 240px; flex-shrink: 0; background: var(--surface);
+    border-right: 1px solid var(--border); display: flex; flex-direction: column;
+    transition: width 0.3s cubic-bezier(.4,0,.2,1); overflow: hidden;
+  }
+  #sidebar.collapsed { width: 72px; }
+  .sidebar-logo { padding: 20px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; white-space: nowrap; }
+  .logo-icon { width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, var(--accent), var(--accent-soft)); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 900; color: #fff; flex-shrink: 0; }
+  .logo-text { font-weight: 900; font-size: 16px; letter-spacing: -0.02em; }
+  .logo-text span { color: var(--accent); }
+  .logo-sub { font-size: 9px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+
+  nav { flex: 1; padding: 12px 8px; overflow-y: auto; }
+  .nav-btn {
+    width: 100%; display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px; border-radius: 10px; background: transparent;
+    border: 1px solid transparent; color: var(--muted); cursor: pointer;
+    margin-bottom: 2px; transition: all 0.15s; text-align: left;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+    white-space: nowrap;
+  }
+  .nav-btn .nav-icon { font-size: 18px; flex-shrink: 0; }
+  .nav-btn:hover { background: rgba(6,182,212,0.08); }
+  .nav-btn.active { font-weight: 700; }
+  #sidebar.collapsed .nav-btn { justify-content: center; padding: 10px; }
+  #sidebar.collapsed .nav-label { display: none; }
+
+  .sidebar-footer { padding: 12px 16px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 10px; white-space: nowrap; }
+  #sidebar.collapsed .sidebar-footer { display: none; }
+  .avatar { width: 32px; height: 32px; border-radius: 8px; background: rgba(6,182,212,0.2); display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+
+  /* MAIN */
+  main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  header {
+    height: 60px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px; border-bottom: 1px solid var(--border); background: var(--surface); flex-shrink: 0;
+  }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .toggle-btn { background: transparent; border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; color: var(--muted); cursor: pointer; font-size: 14px; }
+  .header-module { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; }
+  .header-right { display: flex; align-items: center; gap: 16px; }
+  .status-pill { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.25); border-radius: 99px; padding: 4px 12px; display: flex; align-items: center; gap: 6px; }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+  .status-txt { font-size: 11px; color: var(--green); font-weight: 700; }
+  #clock { font-size: 13px; color: var(--muted); font-family: 'Space Mono', monospace; }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* CONTENT */
+  #content { flex: 1; overflow-y: auto; padding: 24px; }
+
+  /* CARDS & UTILITIES */
+  .stat-grid { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 28px; }
+  .stat-card {
+    flex: 1; min-width: 140px; background: linear-gradient(135deg, var(--card), var(--surface));
+    border: 1px solid var(--border); border-radius: 16px; padding: 20px 24px; position: relative; overflow: hidden;
+  }
+  .stat-card .bg-blob { position: absolute; top:-20px; right:-20px; width:80px; height:80px; border-radius:50%; opacity:.08; }
+  .stat-icon { font-size: 22px; margin-bottom: 8px; }
+  .stat-value { font-size: 28px; font-weight: 800; font-family: 'Space Mono', monospace; line-height: 1; }
+  .stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+  .stat-sub { font-size: 11px; color: var(--sub); margin-top: 2px; }
+
+  .badge { border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; display: inline-block; }
+  .progress-wrap { background: var(--border); border-radius: 99px; height: 6px; overflow: hidden; width: 100%; }
+  .progress-bar { height: 100%; border-radius: 99px; transition: width 0.8s cubic-bezier(.4,0,.2,1); }
+
+  .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+  .section-title { font-size: 24px; font-weight: 800; }
+  .section-sup { font-size: 11px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 4px; }
+
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; }
+  .row-item {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    margin-bottom: 8px;
+  }
+
+  .btn { border: none; border-radius: 10px; padding: 10px 20px; font-weight: 700; cursor: pointer; font-size: 13px; font-family: 'DM Sans', sans-serif; transition: opacity 0.15s; }
+  .btn:hover { opacity: 0.85; }
+  .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent-soft)); color: #fff; }
+  .btn-green { background: var(--green); color: #fff; }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 8px; padding: 10px 20px; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+  .btn-danger { background: transparent; border: 1px solid rgba(239,68,68,0.4); border-radius: 6px; padding: 4px 10px; color: var(--red); cursor: pointer; font-size: 11px; font-family: 'DM Sans', sans-serif; }
+
+  input, select, textarea {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 14px; color: var(--text); font-size: 13px; font-family: 'DM Sans', sans-serif; outline: none;
+  }
+  select option { background: var(--surface); }
+  textarea { resize: none; }
+
+  /* MODULE SPECIFIC */
+  .quick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap: 12px; }
+  .quick-btn { border-radius: 14px; padding: 18px 20px; cursor: pointer; text-align: left; transition: all 0.2s; color: var(--text); }
+
+  .cal-strip { display: flex; gap: 6px; margin-bottom: 24px; overflow-x: auto; padding-bottom: 4px; }
+  .cal-day { min-width: 44px; height: 52px; border-radius: 10px; border: none; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.15s; font-family: 'DM Sans', sans-serif; }
+  .cal-day.active { font-weight: 800; color: #fff; }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .form-row-full { grid-column: 1/-1; }
+
+  .floor-btn { width: 100%; border-radius: 10px; border: 2px solid transparent; padding: 12px 14px; cursor: pointer; text-align: left; transition: all 0.2s; margin-bottom: 4px; font-family: 'DM Sans', sans-serif; }
+  .bed-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+  .bed { width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; border: 1px solid; }
+
+  .call-item { border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; cursor: pointer; transition: all 0.15s; margin-bottom: 8px; background: var(--surface); }
+  .call-item.selected { background: rgba(139,92,246,0.12); border-color: rgba(139,92,246,0.4); }
+
+  .nutri-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; cursor: pointer; transition: all 0.2s; }
+  .nutri-card.selected { border-color: rgba(236,72,153,0.5); }
+  .psych-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; cursor: pointer; transition: all 0.2s; }
+  .psych-card.selected { border-color: rgba(167,139,250,0.5); }
+
+  .expand-section { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+  .tag-btn { border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 11px; font-weight: 600; font-family: 'DM Sans', sans-serif; border: 1px solid; }
+
+  /* ANIMATIONS */
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  #content > div { animation: fadeIn 0.25s ease; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .four-col { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+
+  @media (max-width: 900px) {
+    .form-grid { grid-template-columns: 1fr 1fr; }
+    .two-col { grid-template-columns: 1fr; }
+    .four-col { grid-template-columns: 1fr 1fr; }
+    .stat-grid .stat-card { min-width: 120px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">⬡</div>
+    <div class="sidebar-text">
+      <div class="logo-text">SALUD<span>360</span></div>
+      <div class="logo-sub">Sistema Integral</div>
+    </div>
+  </div>
+  <nav id="nav"></nav>
+  <div class="sidebar-footer">
+    <div class="avatar">👨‍⚕️</div>
+    <div>
+      <div style="font-size:12px;font-weight:700">Admin General</div>
+      <div style="font-size:10px;color:var(--muted)">Acceso total</div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main>
+  <header>
+    <div class="header-left">
+      <button class="toggle-btn" id="toggleBtn">◀</button>
+      <div class="header-module" id="headerModule"></div>
+    </div>
+    <div class="header-right">
+      <div class="status-pill"><div class="status-dot"></div><span class="status-txt">Sistema Activo</span></div>
+      <div id="clock"></div>
+    </div>
+  </header>
+  <div id="content"></div>
+</main>
+
+<script>
+const MODULES = [
+  { id:"dashboard",     label:"Dashboard",       icon:"⬡", color:"#06B6D4" },
+  { id:"citas",         label:"Agendamiento",    icon:"◷", color:"#06B6D4" },
+  { id:"callcenter",    label:"Call Center",     icon:"◉", color:"#8B5CF6" },
+  { id:"farmacia",      label:"Farmacia",        icon:"⬡", color:"#10B981" },
+  { id:"infraestructura",label:"Infraestructura",icon:"▦", color:"#F59E0B" },
+  { id:"nutricion",     label:"Nutrición",       icon:"◎", color:"#EC4899" },
+  { id:"laboratorio",   label:"Lab & DX",        icon:"◈", color:"#EF4444" },
+  { id:"psicologia",    label:"Psicología",      icon:"◐", color:"#A78BFA" },
+];
+
+const SPECIALTIES = ["Cardiología","Pediatría","Ortopedia","Ginecología","Neurología","Medicina General","Dermatología","Endocrinología"];
+const DOCTORS = ["Dra. Martínez","Dr. López","Dra. Torres","Dr. Hernández","Dra. Vargas","Dr. Medina"];
+const TIMES = ["08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30","14:00","14:30","15:00","15:30","16:00","16:30"];
+
+let state = {
+  active: "dashboard",
+  sidebarOpen: true,
+  selectedDate: new Date().getDate(),
+  appointments: [
+    {id:1,patient:"Ana García",doc:"Dra. Martínez",spec:"Cardiología",time:"09:00",status:"confirmada"},
+    {id:2,patient:"Luis Peña",doc:"Dr. López",spec:"Ortopedia",time:"10:30",status:"pendiente"},
+    {id:3,patient:"Sofía Rueda",doc:"Dra. Torres",spec:"Ginecología",time:"11:30",status:"confirmada"},
+    {id:4,patient:"Pablo Ríos",doc:"Dr. Medina",spec:"Neurología",time:"14:00",status:"cancelada"},
+  ],
+  showForm: false,
+  newAppt: { patient:"", spec:"", doc:"", time:"" },
+  activeCall: null,
+  selectedFloor: null,
+  selectedNutri: null,
+  selectedPsych: null,
+};
+
+const MEDS = [
+  {name:"Amoxicilina 500mg",stock:234,min:50,expiry:"2026-03-15",cat:"Antibiótico"},
+  {name:"Metformina 850mg",stock:12,min:30,expiry:"2025-12-20",cat:"Antidiabético"},
+  {name:"Losartán 50mg",stock:189,min:40,expiry:"2026-08-10",cat:"Antihipertensivo"},
+  {name:"Ibuprofeno 400mg",stock:8,min:60,expiry:"2025-11-05",cat:"AINE"},
+  {name:"Omeprazol 20mg",stock:310,min:50,expiry:"2026-06-30",cat:"IBP"},
+  {name:"Atorvastatina 40mg",stock:95,min:35,expiry:"2026-02-28",cat:"Estatina"},
+];
+const FLOORS = [
+  {floor:5,name:"UCI / Cuidados Intensivos",beds:20,occupied:17,staff:12,visits:8,color:"#EF4444"},
+  {floor:4,name:"Cirugía y Recuperación",beds:30,occupied:22,staff:18,visits:15,color:"#F59E0B"},
+  {floor:3,name:"Hospitalización General",beds:40,occupied:31,staff:22,visits:34,color:"#06B6D4"},
+  {floor:2,name:"Maternidad y Neonatología",beds:25,occupied:19,staff:16,visits:28,color:"#EC4899"},
+  {floor:1,name:"Urgencias y Consultas",beds:35,occupied:28,staff:25,visits:67,color:"#10B981"},
+];
+const CALLS = [
+  {id:"C001",patient:"Carlos Ruiz",reason:"Confirmar cita",wait:"2m 15s",priority:"normal",status:"En espera"},
+  {id:"C002",patient:"María González",reason:"Resultados laboratorio",wait:"5m 40s",priority:"urgente",status:"En espera"},
+  {id:"C003",patient:"Pedro Salcedo",reason:"Cancelar cita",wait:"1m 05s",priority:"normal",status:"Atendiendo"},
+  {id:"C004",patient:"Ana Bermúdez",reason:"Prescripción médica",wait:"8m 20s",priority:"normal",status:"En espera"},
+];
+const LABS = [
+  {id:"L001",patient:"José Ramírez",test:"Hemograma completo",status:"En proceso",time:"09:30",type:"lab"},
+  {id:"L002",patient:"Lucia Mendoza",test:"Rayos X Tórax",status:"Completado",time:"08:45",type:"dx"},
+  {id:"L003",patient:"Roberto Castillo",test:"Resonancia Magnética",status:"Pendiente",time:"11:00",type:"dx"},
+  {id:"L004",patient:"Carmen Ríos",test:"Perfil lipídico",status:"En proceso",time:"10:15",type:"lab"},
+  {id:"L005",patient:"Andrés Villa",test:"Ecografía abdominal",status:"Completado",time:"07:30",type:"dx"},
+];
+const NUTRIS = [
+  {name:"Valentina Cruz",bmi:28.4,goal:"Pérdida de peso",sessions:6,progress:68},
+  {name:"Miguel Torres",bmi:23.1,goal:"Ganancia muscular",sessions:4,progress:45},
+  {name:"Sandra Moreno",bmi:31.2,goal:"Control diabetes",sessions:9,progress:82},
+  {name:"Fabio Quintero",bmi:19.8,goal:"Ganar peso",sessions:3,progress:30},
+];
+const PSYCHOS = [
+  {name:"Daniela Suárez",issue:"Ansiedad",sessions:8,next:"Mar, 10:00",therapist:"Psic. Romero"},
+  {name:"Hernán Pérez",issue:"Depresión",sessions:12,next:"Mié, 14:30",therapist:"Psic. Gómez"},
+  {name:"Isabella Cano",issue:"Terapia de pareja",sessions:5,next:"Jue, 16:00",therapist:"Psic. Romero"},
+  {name:"Santiago Díaz",issue:"TOC",sessions:15,next:"Vie, 09:30",therapist:"Psic. Gómez"},
+];
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+function badge(text, color) {
+  return `<span class="badge" style="background:${color}22;color:${color};border:1px solid ${color}44">${text}</span>`;
+}
+function progressBar(val, max, color) {
+  const pct = Math.min((val/max)*100,100);
+  const c = pct>85?"#EF4444":pct>60?"#F59E0B":color;
+  return `<div class="progress-wrap"><div class="progress-bar" style="width:${pct}%;background:${c}"></div></div>`;
+}
+function statCard(icon,value,label,sub,color) {
+  return `<div class="stat-card">
+    <div class="bg-blob" style="background:${color}"></div>
+    <div class="stat-icon">${icon}</div>
+    <div class="stat-value" style="color:${color}">${value}</div>
+    <div class="stat-label">${label}</div>
+    ${sub?`<div class="stat-sub">${sub}</div>`:''}
+  </div>`;
+}
+
+// ── RENDER ───────────────────────────────────────────────────────────────────
+function renderNav() {
+  const nav = document.getElementById('nav');
+  nav.innerHTML = MODULES.map(m => {
+    const isActive = state.active === m.id;
+    return `<button class="nav-btn ${isActive?'active':''}" data-id="${m.id}"
+      style="${isActive?`background:${m.color}18;border-color:${m.color}40;color:${m.color}`:''}">
+      <span class="nav-icon">${m.icon}</span>
+      <span class="nav-label">${m.label}</span>
+    </button>`;
+  }).join('');
+  nav.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => navigate(btn.dataset.id));
+  });
+}
+
+function renderHeader() {
+  const m = MODULES.find(x => x.id === state.active);
+  document.getElementById('headerModule').innerHTML =
+    `<span style="color:${m.color};font-size:16px">${m.icon}</span> <span>${m.label}</span>`;
+  document.getElementById('toggleBtn').textContent = state.sidebarOpen ? '◀' : '▶';
+  document.getElementById('sidebar').classList.toggle('collapsed', !state.sidebarOpen);
+}
+
+function navigate(id) {
+  state.active = id;
+  state.activeCall = null;
+  state.selectedFloor = null;
+  state.selectedNutri = null;
+  state.selectedPsych = null;
+  renderNav();
+  renderHeader();
+  renderContent();
+}
+
+function renderContent() {
+  const el = document.getElementById('content');
+  const views = {
+    dashboard: renderDashboard,
+    citas: renderCitas,
+    callcenter: renderCallCenter,
+    farmacia: renderFarmacia,
+    infraestructura: renderInfraestructura,
+    nutricion: renderNutricion,
+    laboratorio: renderLaboratorio,
+    psicologia: renderPsicologia,
+  };
+  el.innerHTML = `<div>${(views[state.active]||renderDashboard)()}</div>`;
+  bindEvents();
+}
+
+// ── DASHBOARD ────────────────────────────────────────────────────────────────
+function renderDashboard() {
+  const stats = [
+    {icon:"◷",value:"147",label:"Citas Hoy",sub:"+12 vs ayer",color:"#06B6D4"},
+    {icon:"◉",value:"1,284",label:"Pacientes Activos",sub:"En instalaciones",color:"#10B981"},
+    {icon:"◎",value:"8",label:"Llamadas Pendientes",sub:"Tiempo prom: 4m",color:"#8B5CF6"},
+    {icon:"▦",value:"34",label:"Camas Disponibles",sub:"De 150 totales",color:"#F59E0B"},
+    {icon:"⬡",value:"3",label:"Alertas Farmacia",sub:"Stock crítico",color:"#EF4444"},
+    {icon:"◈",value:"89",label:"Órdenes Lab Hoy",sub:"23 en proceso",color:"#EC4899"},
+  ];
+  return `
+    <div class="section-sup">Panel de Control · ${new Date().toLocaleDateString('es-CO',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</div>
+    <h2 style="font-size:28px;font-weight:800;margin:0 0 28px">Resumen Operacional</h2>
+    <div class="stat-grid">${stats.map(s=>statCard(s.icon,s.value,s.label,s.sub,s.color)).join('')}</div>
+    <div class="quick-grid">
+      ${MODULES.filter(m=>m.id!=='dashboard').map(m=>`
+        <button class="quick-btn nav-btn" data-id="${m.id}" style="background:${m.color}15;border:1px solid ${m.color}30">
+          <div style="font-size:24px;color:${m.color};margin-bottom:8px">${m.icon}</div>
+          <div style="font-weight:700;font-size:14px">${m.label}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Acceso rápido →</div>
+        </button>`).join('')}
+    </div>`;
+}
+
+// ── CITAS ────────────────────────────────────────────────────────────────────
+function renderCitas() {
+  const statusColor = {confirmada:"#10B981",pendiente:"#F59E0B",cancelada:"#EF4444"};
+  const days = Array.from({length:30},(_,i)=>i+1);
+  return `
+    <div class="section-header">
+      <div><div class="section-sup">Módulo</div><h2 class="section-title" style="color:#06B6D4">Agendamiento de Citas</h2></div>
+      <button class="btn btn-primary" id="toggleForm">+ Nueva Cita</button>
+    </div>
+    <div id="apptForm" style="display:${state.showForm?'block':'none'};background:var(--card);border:1px solid rgba(6,182,212,0.3);border-radius:16px;padding:24px;margin-bottom:24px">
+      <h3 style="color:#06B6D4;margin:0 0 16px;font-size:16px">Reservar Nueva Cita</h3>
+      <div class="form-grid">
+        <input id="apptPatient" placeholder="Nombre del paciente" value="${state.newAppt.patient}" />
+        <select id="apptSpec"><option value="">Especialidad</option>${SPECIALTIES.map(s=>`<option ${state.newAppt.spec===s?'selected':''}>${s}</option>`).join('')}</select>
+        <select id="apptDoc"><option value="">Especialista</option>${DOCTORS.map(d=>`<option ${state.newAppt.doc===d?'selected':''}>${d}</option>`).join('')}</select>
+        <select id="apptTime"><option value="">Horario</option>${TIMES.map(t=>`<option ${state.newAppt.time===t?'selected':''}>${t}</option>`).join('')}</select>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-green" id="confirmAppt">Confirmar Reserva</button>
+        <button class="btn-ghost" id="cancelForm">Cancelar</button>
+      </div>
+    </div>
+    <div class="cal-strip">${days.map(d=>`<button class="cal-day${d===state.selectedDate?' active':''}" data-day="${d}"
+      style="background:${d===state.selectedDate?'#06B6D4':'var(--card)'};color:${d===state.selectedDate?'#fff':'var(--muted)'}">${d}</button>`).join('')}</div>
+    <div id="apptList">
+      ${state.appointments.map(a=>`
+        <div class="row-item" style="border-left:3px solid ${statusColor[a.status]}">
+          <div style="display:flex;align-items:center;gap:16px">
+            <div style="width:44px;height:44px;border-radius:10px;background:${statusColor[a.status]}20;display:flex;align-items:center;justify-content:center;font-size:18px;color:${statusColor[a.status]}">◷</div>
+            <div>
+              <div style="font-weight:700">${a.patient}</div>
+              <div style="font-size:12px;color:var(--muted)">${a.spec} · ${a.doc}</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="font-size:18px;font-weight:800;color:#06B6D4;font-family:'Space Mono',monospace">${a.time}</div>
+            ${badge(a.status,statusColor[a.status])}
+            ${a.status!=='cancelada'?`<button class="btn-danger" data-cancel="${a.id}">Cancelar</button>`:''}
+          </div>
+        </div>`).join('')}
+    </div>`;
+}
+
+// ── CALL CENTER ──────────────────────────────────────────────────────────────
+function renderCallCenter() {
+  const waiting = CALLS.filter(c=>c.status==='En espera').length;
+  const active = CALLS.filter(c=>c.status==='Atendiendo').length;
+  return `
+    <div class="section-header">
+      <div><div class="section-sup">Módulo</div><h2 class="section-title" style="color:#8B5CF6">Call Center</h2></div>
+      <div style="display:flex;gap:12px">
+        ${[{l:"En Espera",v:waiting,c:"#F59E0B"},{l:"Atendiendo",v:active,c:"#10B981"},{l:"Agentes Activos",v:5,c:"#8B5CF6"}].map(s=>`
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 16px;text-align:center">
+            <div style="font-size:20px;font-weight:800;color:${s.c};font-family:'Space Mono',monospace">${s.v}</div>
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase">${s.l}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="card">
+        <h3 style="margin:0 0 16px;font-size:13px;color:var(--sub);text-transform:uppercase;letter-spacing:0.08em">Cola de Atención</h3>
+        ${CALLS.map(c=>`
+          <div class="call-item ${state.activeCall?.id===c.id?'selected':''}" data-call="${c.id}">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div style="font-weight:700;font-size:13px">${c.patient}</div>
+              ${badge(c.priority,c.priority==='urgente'?'#EF4444':'#8B5CF6')}
+            </div>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px;display:flex;justify-content:space-between">
+              <span>${c.reason}</span>
+              <span style="color:#F59E0B;font-family:'Space Mono',monospace">⏱ ${c.wait}</span>
+            </div>
+            <div style="margin-top:6px">${badge(c.status,c.status==='Atendiendo'?'#10B981':'#F59E0B')}</div>
+          </div>`).join('')}
+      </div>
+      <div class="card">
+        <h3 style="margin:0 0 16px;font-size:13px;color:var(--sub);text-transform:uppercase;letter-spacing:0.08em">Panel de Atención</h3>
+        ${state.activeCall ? `
+          <div style="background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.2);border-radius:12px;padding:16px;margin-bottom:16px">
+            <div style="font-size:18px;font-weight:800">${state.activeCall.patient}</div>
+            <div style="font-size:13px;color:var(--muted);margin-top:4px">${state.activeCall.reason}</div>
+            <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+              ${["Citas","Historia","Farmacia","Laboratorio"].map(b=>`
+                <button class="tag-btn" style="background:rgba(139,92,246,0.15);color:#8B5CF6;border-color:rgba(139,92,246,0.3)">${b}</button>`).join('')}
+            </div>
+          </div>
+          <textarea placeholder="Notas de la llamada..." style="width:100%;height:100px"></textarea>
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button class="btn" style="flex:1;background:#10B981;color:#fff" id="resolveCall">✓ Resolver</button>
+            <button class="btn" style="flex:1;background:#F59E0B;color:#000">↗ Transferir</button>
+            <button class="btn" style="flex:1;background:#EF4444;color:#fff" id="endCall">✕ Finalizar</button>
+          </div>` :
+          `<div style="text-align:center;padding:40px 20px;color:var(--muted)">
+            <div style="font-size:48px;margin-bottom:12px">◉</div>
+            <div>Selecciona una llamada para atender</div>
+          </div>`}
+      </div>
+    </div>`;
+}
+
+// ── FARMACIA ─────────────────────────────────────────────────────────────────
+function renderFarmacia() {
+  const alerts = MEDS.filter(m=>m.stock<m.min).length;
+  const expiring = MEDS.filter(m=>{
+    const d = Math.ceil((new Date(m.expiry)-new Date())/(1000*60*60*24));
+    return d<90;
+  }).length;
+  return `
+    <div class="section-header">
+      <div><div class="section-sup">Módulo</div><h2 class="section-title" style="color:#10B981">Farmacia</h2></div>
+      <div style="display:flex;gap:10px">
+        <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:10px;padding:8px 16px">
+          <span style="color:#EF4444;font-weight:700;font-size:13px">⚠ ${alerts} Stock Crítico</span>
+        </div>
+        <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);border-radius:10px;padding:8px 16px">
+          <span style="color:#F59E0B;font-weight:700;font-size:13px">⏱ ${expiring} Por Vencer</span>
+        </div>
+      </div>
+    </div>
+    ${MEDS.map(med=>{
+      const low = med.stock < med.min;
+      const days = Math.ceil((new Date(med.expiry)-new Date())/(1000*60*60*24));
+      const exp = days < 90;
+      return `<div class="row-item" style="border-color:${low?'rgba(239,68,68,0.4)':'var(--border)'};display:grid;grid-template-columns:1fr 100px 140px 140px 130px;gap:16px">
+        <div>
+          <div style="font-weight:700">${med.name}</div>
+          <div style="font-size:12px;color:var(--muted)">${med.cat}</div>
+        </div>
+        <div>
+          <div style="font-size:22px;font-weight:800;color:${low?'#EF4444':'var(--text)'};font-family:'Space Mono',monospace">${med.stock}</div>
+          <div style="font-size:10px;color:var(--muted)">unidades</div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+            <span style="font-size:11px;color:var(--muted)">Stock</span>
+            <span style="font-size:11px;color:${low?'#EF4444':'var(--muted)'}">${Math.round((med.stock/med.min)*100)}%</span>
+          </div>
+          ${progressBar(med.stock,med.min*4,'#10B981')}
+        </div>
+        <div style="color:${exp?'#F59E0B':'var(--sub)'};font-size:12px;font-weight:600">${exp?'⚠ ':''}Vence: ${med.expiry}</div>
+        <div>
+          ${low?badge('Reabastecer','#EF4444'):exp?badge('Por vencer','#F59E0B'):badge('OK','#10B981')}
+        </div>
+      </div>`;
+    }).join('')}`;
+}
+
+// ── INFRAESTRUCTURA ──────────────────────────────────────────────────────────
+function renderInfraestructura() {
+  const sf = state.selectedFloor;
+  return `
+    <div style="margin-bottom:24px">
+      <div class="section-sup">Módulo</div>
+      <h2 class="section-title" style="color:#F59E0B">Gestión de Infraestructura</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:280px 1fr;gap:20px">
+      <div class="card">
+        <h3 style="margin:0 0 16px;font-size:13px;color:var(--sub);text-transform:uppercase;letter-spacing:0.08em">Centro Médico</h3>
+        ${[...FLOORS].reverse().map(f=>`
+          <button class="floor-btn" data-floor="${f.floor}"
+            style="background:${sf?.floor===f.floor?f.color+'22':f.color+'10'};border-color:${sf?.floor===f.floor?f.color:f.color+'40'}">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <span style="font-weight:700;color:${f.color};font-size:13px">Piso ${f.floor}</span>
+              <span style="font-size:11px;color:var(--muted)">${f.occupied}/${f.beds} camas</span>
+            </div>
+            ${progressBar(f.occupied,f.beds,f.color)}
+            <div style="font-size:11px;color:var(--muted);margin-top:4px">${Math.round((f.occupied/f.beds)*100)}% ocupado</div>
+          </button>`).join('')}
+      </div>
+      <div id="floorDetail">
+        ${sf ? renderFloorDetail(sf) : `
+          <div class="card" style="display:flex;align-items:center;justify-content:center;min-height:300px;color:var(--muted);flex-direction:column;gap:12px">
+            <div style="font-size:48px;opacity:.4">▦</div>
+            <div>Selecciona un piso para ver el detalle</div>
+          </div>`}
+      </div>
+    </div>`;
+}
+function renderFloorDetail(f) {
+  const metrics = [
+    {l:"Camas Totales",v:f.beds,c:"#06B6D4"},
+    {l:"Ocupadas",v:f.occupied,c:f.color},
+    {l:"Disponibles",v:f.beds-f.occupied,c:"#10B981"},
+    {l:"Personal Activo",v:f.staff,c:"#8B5CF6"},
+    {l:"Visitas Hoy",v:f.visits,c:"#EC4899"},
+    {l:"T. Prom. Atención",v:"42m",c:"#F59E0B"},
+  ];
+  return `
+    <div class="card" style="border-color:${f.color}40">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
+        <div>
+          <div style="font-size:13px;color:${f.color};font-weight:700;text-transform:uppercase;letter-spacing:0.08em">Piso ${f.floor}</div>
+          <h3 style="font-size:20px;font-weight:800;margin:4px 0 0">${f.name}</h3>
+        </div>
+        ${badge(Math.round((f.occupied/f.beds)*100)+'% ocupado',f.color)}
+      </div>
+      <div class="four-col" style="margin-bottom:20px">
+        ${metrics.map(m=>`
+          <div style="background:var(--surface);border-radius:10px;padding:14px;border:1px solid var(--border)">
+            <div style="font-size:24px;font-weight:800;color:${m.c};font-family:'Space Mono',monospace">${m.v}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">${m.l}</div>
+          </div>`).join('')}
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.06em">Mapa de Camas</div>
+      <div class="bed-grid">
+        ${Array.from({length:f.beds},(_,i)=>{
+          const occ = i < f.occupied;
+          return `<div class="bed" style="background:${occ?f.color+'40':'#10B98120'};border-color:${occ?f.color+'80':'#10B98140'};color:${occ?f.color:'#10B981'}">${String(i+1).padStart(2,'0')}</div>`;
+        }).join('')}
+      </div>
+      <div style="display:flex;gap:16px;margin-top:12px">
+        <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)">
+          <div style="width:12px;height:12px;border-radius:2px;background:${f.color}40;border:1px solid ${f.color}"></div> Ocupada
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)">
+          <div style="width:12px;height:12px;border-radius:2px;background:#10B98120;border:1px solid #10B981"></div> Disponible
+        </div>
+      </div>
+    </div>`;
+}
+
+// ── NUTRICIÓN ────────────────────────────────────────────────────────────────
+function renderNutricion() {
+  return `
+    <div style="margin-bottom:24px">
+      <div class="section-sup">Módulo</div>
+      <h2 class="section-title" style="color:#EC4899">Nutrición</h2>
+    </div>
+    <div class="two-col">
+      ${NUTRIS.map(p=>`
+        <div class="nutri-card ${state.selectedNutri===p.name?'selected':''}" data-nutri="${p.name}">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+            <div>
+              <div style="font-weight:700">${p.name}</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:2px">${p.goal}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:20px;font-weight:800;color:#EC4899;font-family:'Space Mono',monospace">${p.bmi}</div>
+              <div style="font-size:10px;color:var(--muted)">IMC</div>
+            </div>
+          </div>
+          <div style="margin-bottom:8px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+              <span style="font-size:11px;color:var(--muted)">Progreso del plan</span>
+              <span style="font-size:11px;color:#EC4899;font-weight:700">${p.progress}%</span>
+            </div>
+            ${progressBar(p.progress,100,'#EC4899')}
+          </div>
+          <div style="font-size:12px;color:var(--muted)">${p.sessions} sesiones completadas</div>
+          ${state.selectedNutri===p.name?`
+            <div class="expand-section">
+              <div style="font-size:12px;color:#EC4899;font-weight:700;margin-bottom:8px">Plan Alimenticio</div>
+              ${["Desayuno: Avena con frutas y proteína","Almuerzo: Proteína magra + vegetales + carbohidratos complejos","Merienda: Frutos secos + fruta","Cena: Sopa vegetal + proteína ligera"].map(m=>
+                `<div style="font-size:12px;color:var(--sub);margin-bottom:4px;padding-left:8px;border-left:2px solid rgba(236,72,153,0.3)">${m}</div>`
+              ).join('')}
+              <button class="tag-btn" style="margin-top:12px;background:rgba(236,72,153,0.15);color:#EC4899;border-color:rgba(236,72,153,0.3)">Generar Nuevo Plan</button>
+            </div>`:''
+          }
+        </div>`).join('')}
+    </div>`;
+}
+
+// ── LABORATORIO ──────────────────────────────────────────────────────────────
+function renderLaboratorio() {
+  const sc = {Completado:"#10B981","En proceso":"#F59E0B",Pendiente:"#64748B"};
+  const total = LABS.length, done = LABS.filter(l=>l.status==='Completado').length, proc = LABS.filter(l=>l.status==='En proceso').length;
+  return `
+    <div class="section-header">
+      <div><div class="section-sup">Módulo</div><h2 class="section-title" style="color:#EF4444">Laboratorio & Diagnóstico</h2></div>
+      <div style="display:flex;gap:10px">
+        ${[{l:"Total Hoy",v:total,c:"#EF4444"},{l:"Completados",v:done,c:"#10B981"},{l:"En Proceso",v:proc,c:"#F59E0B"}].map(s=>`
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 16px;text-align:center">
+            <div style="font-size:20px;font-weight:800;color:${s.c};font-family:'Space Mono',monospace">${s.v}</div>
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase">${s.l}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+    ${LABS.map(o=>`
+      <div class="row-item" style="display:grid;grid-template-columns:60px 1fr 160px 80px 130px;gap:16px">
+        <div style="width:44px;height:44px;border-radius:10px;background:${o.type==='lab'?'rgba(239,68,68,0.15)':'rgba(139,92,246,0.15)'};display:flex;align-items:center;justify-content:center;font-size:20px;color:${o.type==='lab'?'#EF4444':'#8B5CF6'}">
+          ${o.type==='lab'?'◈':'◉'}
+        </div>
+        <div>
+          <div style="font-weight:700">${o.patient}</div>
+          <div style="font-size:12px;color:var(--muted)">${o.test}</div>
+        </div>
+        <div>${badge(o.type==='lab'?'Laboratorio':'Diagnóstico',o.type==='lab'?'#EF4444':'#8B5CF6')}</div>
+        <div style="font-size:16px;font-weight:700;color:#06B6D4;font-family:'Space Mono',monospace">${o.time}</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:8px;height:8px;border-radius:50%;background:${sc[o.status]||'#64748B'}"></div>
+          <span style="font-size:12px;color:${sc[o.status]||'#64748B'};font-weight:600">${o.status}</span>
+        </div>
+      </div>`).join('')}`;
+}
+
+// ── PSICOLOGÍA ───────────────────────────────────────────────────────────────
+function renderPsicologia() {
+  return `
+    <div style="margin-bottom:24px">
+      <div class="section-sup">Módulo</div>
+      <h2 class="section-title" style="color:#A78BFA">Psicología</h2>
+    </div>
+    <div class="two-col">
+      ${PSYCHOS.map(p=>`
+        <div class="psych-card ${state.selectedPsych===p.name?'selected':''}" data-psych="${p.name}">
+          <div style="display:flex;justify-content:space-between;margin-bottom:12px">
+            <div>
+              <div style="font-weight:700">${p.name}</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:2px">${p.therapist}</div>
+            </div>
+            ${badge(p.issue,'#A78BFA')}
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="font-size:12px;color:var(--muted)">
+              <span style="color:#A78BFA;font-weight:700;font-family:'Space Mono',monospace">${p.sessions}</span> sesiones
+            </div>
+            <div style="font-size:12px;color:var(--sub)">Próx: ${p.next}</div>
+          </div>
+          ${state.selectedPsych===p.name?`
+            <div class="expand-section">
+              <div style="font-size:12px;color:#A78BFA;font-weight:700;margin-bottom:10px">Seguimiento Terapéutico</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                ${["Notas de Sesión","Plan Terapéutico","Evaluaciones","Agendar Sesión"].map(b=>`
+                  <button class="tag-btn" style="background:rgba(167,139,250,0.15);color:#A78BFA;border-color:rgba(167,139,250,0.3)">${b}</button>`).join('')}
+              </div>
+              <div style="margin-top:12px;background:var(--surface);border-radius:8px;padding:12px">
+                <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Última nota (hace 3 días)</div>
+                <div style="font-size:12px;color:var(--sub);line-height:1.6">
+                  Sesión progresiva. Paciente muestra avances en técnicas de regulación emocional. Se recomienda continuar con el plan actual y evaluar en 2 semanas.
+                </div>
+              </div>
+            </div>`:''
+          }
+        </div>`).join('')}
+    </div>`;
+}
+
+// ── EVENT BINDING ─────────────────────────────────────────────────────────────
+function bindEvents() {
+  // Nav quick buttons (dashboard)
+  document.querySelectorAll('[data-id]').forEach(btn => {
+    btn.addEventListener('click', () => navigate(btn.dataset.id));
+  });
+
+  // Citas
+  const toggleForm = document.getElementById('toggleForm');
+  if (toggleForm) toggleForm.addEventListener('click', () => {
+    state.showForm = !state.showForm; renderContent();
+  });
+  const cancelForm = document.getElementById('cancelForm');
+  if (cancelForm) cancelForm.addEventListener('click', () => { state.showForm=false; renderContent(); });
+  const confirmAppt = document.getElementById('confirmAppt');
+  if (confirmAppt) confirmAppt.addEventListener('click', () => {
+    const p = document.getElementById('apptPatient').value;
+    const s = document.getElementById('apptSpec').value;
+    const d = document.getElementById('apptDoc').value;
+    const t = document.getElementById('apptTime').value;
+    if (!p||!s||!d||!t) return;
+    state.appointments.push({id:Date.now(),patient:p,doc:d,spec:s,time:t,status:"pendiente"});
+    state.showForm=false; state.newAppt={patient:"",spec:"",doc:"",time:""};
+    renderContent();
+  });
+  document.querySelectorAll('[data-cancel]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const id = parseInt(btn.dataset.cancel);
+      state.appointments = state.appointments.map(a => a.id===id?{...a,status:"cancelada"}:a);
+      renderContent();
+    });
+  });
+  document.querySelectorAll('.cal-day').forEach(btn => {
+    btn.addEventListener('click', () => { state.selectedDate=parseInt(btn.dataset.day); renderContent(); });
+  });
+
+  // Call center
+  document.querySelectorAll('[data-call]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const c = CALLS.find(x=>x.id===btn.dataset.call);
+      state.activeCall = state.activeCall?.id===c.id ? null : c;
+      renderContent();
+    });
+  });
+  const endCall = document.getElementById('endCall');
+  if (endCall) endCall.addEventListener('click', () => { state.activeCall=null; renderContent(); });
+  const resolveCall = document.getElementById('resolveCall');
+  if (resolveCall) resolveCall.addEventListener('click', () => { state.activeCall=null; renderContent(); });
+
+  // Infraestructura
+  document.querySelectorAll('[data-floor]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const f = FLOORS.find(x=>x.floor===parseInt(btn.dataset.floor));
+      state.selectedFloor = state.selectedFloor?.floor===f.floor ? null : f;
+      renderContent();
+    });
+  });
+
+  // Nutricion
+  document.querySelectorAll('[data-nutri]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const n = btn.dataset.nutri;
+      state.selectedNutri = state.selectedNutri===n ? null : n;
+      renderContent();
+    });
+  });
+
+  // Psicologia
+  document.querySelectorAll('[data-psych]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const n = btn.dataset.psych;
+      state.selectedPsych = state.selectedPsych===n ? null : n;
+      renderContent();
+    });
+  });
+}
+
+// ── CLOCK ─────────────────────────────────────────────────────────────────────
+function updateClock() {
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString('es-CO');
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── SIDEBAR TOGGLE ────────────────────────────────────────────────────────────
+document.getElementById('toggleBtn').addEventListener('click', () => {
+  state.sidebarOpen = !state.sidebarOpen;
+  renderHeader();
+});
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+renderNav();
+renderHeader();
+renderContent();
+</script>
+</body>
+</html>
